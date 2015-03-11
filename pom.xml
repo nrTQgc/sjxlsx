@@ -23,13 +23,17 @@
 		</plugins>
 	</build>
 	<distributionManagement>
-		<repository>
-			<id>incerepo</id>
-			<url>
-				dav:http://192.168.1.244:8000/artifactory/incerepo
-			</url>
-		</repository>
-	</distributionManagement>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>Artifactory</name>
+            <url>http://artifactory.laximo.ru/artifactory/libs-snapshot-local</url>
+        </snapshotRepository>
+        <repository>
+            <id>central</id>
+            <name>Artifactory</name>
+            <url>http://artifactory.laximo.ru/artifactory/libs-release-local</url>
+        </repository>
+    </distributionManagement>
 
 	<dependencies>
 		<dependency>
