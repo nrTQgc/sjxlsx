@@ -1,6 +1,7 @@
 package com.incesoft.tools.excel.support;
 
 import java.io.File;
+import java.util.List;
 
 import com.incesoft.tools.excel.ExcelRowIterator;
 import com.incesoft.tools.excel.ReaderSupport;
@@ -113,8 +114,14 @@ public class XLSXReaderSupport extends ReaderSupport {
 		}
 
 		public int getCellCount() {
-			Cell[] row = sheet.getRows().get(rowPos);
-			return row == null ? 0 : row.length;
+			if(rowPos>=sheet.getRows().size()){
+				return 0;
+			}
+			List<Cell> cells = sheet.getRows().get(rowPos);
+			if(cells==null){
+				return 0;
+			}
+			return cells.size();
 		}
 
 		public void prevRow() {

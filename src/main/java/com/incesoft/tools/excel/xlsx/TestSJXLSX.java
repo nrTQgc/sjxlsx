@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.List;
 
 import com.incesoft.tools.excel.xlsx.Sheet.SheetRowReader;
@@ -44,7 +45,7 @@ public class TestSJXLSX {
 		}
 	}
 
-	private static void printRow(int rowPos, Cell[] row) {
+	private static void printRow(int rowPos, List<Cell> row) {
 		int cellPos = -1;
 		for (Cell cell : row) {
 			cellPos++;
@@ -58,9 +59,9 @@ public class TestSJXLSX {
 	public static void testLoadALL(SimpleXLSXWorkbook workbook) {
 		// medium data set,just load all at a time
 		Sheet sheetToRead = workbook.getSheet(0);
-		List<Cell[]> rows = sheetToRead.getRows();
+		List<List<Cell>> rows = sheetToRead.getRows();
 		int rowPos = 0;
-		for (Cell[] row : rows) {
+		for (List<Cell> row : rows) {
 			printRow(rowPos, row);
 			rowPos++;
 		}
@@ -75,7 +76,7 @@ public class TestSJXLSX {
 		Cell[] row;
 		int rowPos = 0;
 		while ((row = reader.readRow()) != null) {
-			printRow(rowPos, row);
+			printRow(rowPos, Arrays.asList(row));
 			rowPos++;
 		}
 	}

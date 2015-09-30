@@ -2,6 +2,7 @@ package com.incesoft.tools.excel.xlsx;
 
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -21,6 +22,18 @@ import com.incesoft.tools.excel.xlsx.SimpleXLSXWorkbook.XMLStreamCreator;
  */
 public class Sheet {
 
+	static class ArrayListAnySize<E> extends ArrayList<E>{
+		@Override
+		public void add(int index, E element){
+			if(index >= 0 && index <= size()) super.add(index, element);
+			int insertNulls = index - size();
+			for(int i = 0; i < insertNulls; i++){
+				super.add(null);
+			}
+			super.add(element);
+		}
+	}
+
 	private int sheetIndex;
 
 	private SimpleXLSXWorkbook workbook;
@@ -30,7 +43,7 @@ public class Sheet {
 		this.workbook = workbook;
 	}
 
-	List<Cell[]> parsedRows = new ArrayList<Cell[]>();
+	List<List<Cell>> parsedRows = new ArrayList<List<Cell>>();
 
 	// READ>>>
 	/**
@@ -94,7 +107,8 @@ public class Sheet {
 
 		private int lastRowIndex = -1;
 
-		private Cell[] delayRow;
+		private List<Cell> delayRow;
+		public static Cell[] TEMPLATE = new Cell[0];
 
 		/**
 		 * iterate over the rows(including empty rows)
@@ -109,13 +123,13 @@ public class Sheet {
 						return EMPTY_ROW;
 					}
 					if (delayRow != null) {
-						Cell[] ret = delayRow;
+						Cell[] ret = delayRow.toArray(TEMPLATE);
 						delayRow = null;
 						return ret;
 					}
 				}
 
-				Cell[] ret = null;
+				List<Cell> ret = new ArrayListAnySize<Cell>();
 				String r, s = null, t, text;
 				String v;
 				int columnspan;
@@ -125,72 +139,85 @@ public class Sheet {
 					switch (type) {
 					case XMLStreamReader.START_ELEMENT:
 						if ("row".equals(reader.getLocalName())) {
+                            System.out.println("start of row");
 							spans = reader.getAttributeValue(null, "spans");
 							if (spans == null) {
 								// empty row
-								ret = EMPTY_ROW;
 							} else {
-								lastRowIndex = Integer.valueOf(reader
-										.getAttributeValue(null, "r")) - 1;
+								lastRowIndex = Integer.valueOf(reader.getAttributeValue(null, "r")) - 1;
                                 if(spans.isEmpty()){
                                     columnspan = MAX_COLUMN_SPAN;
                                 }else {
-                                    columnspan = Integer.valueOf(spans
-                                            .substring(spans.indexOf(":") + 1));
+                                    columnspan = Integer.valueOf(spans.substring(spans.indexOf(":") + 1));
                                     if (columnspan > MAX_COLUMN_SPAN) {
                                         columnspan = MAX_COLUMN_SPAN;
                                     }
                                 }
-								ret = new Cell[columnspan];
+//								ret = new Cell[columnspan];
 							}
 						} else if ("c".equals(reader.getLocalName())) {
 							if (ret != null) {
 								t = reader.getAttributeValue(null, "t");
 								// s = reader.getAttributeValue(null, "s");
 								r = reader.getAttributeValue(null, "r");
+                                if("B30976".equals(r)){
+                                    System.out.println(r);
+                                }
 								text = null;
 								v = null;
+								boolean done = false;
 								while (reader.hasNext()) {
 									type = reader.next();
-									if (type == XMLStreamReader.CHARACTERS) {
+									if (type == XMLStreamReader.START_ELEMENT && "v".equals(reader.getLocalName())) {
+                                        continue;
+									}
+                                    if (type == XMLStreamReader.CHARACTERS) {
 										v = reader.getText();
-										if ("s".equals(t)) {
-											text = sheet.workbook
-													.getSharedStringValue(Integer
-															.valueOf(v));
-										}
-									} else if (type == XMLStreamReader.END_ELEMENT
-											&& "c"
-													.equals(reader
-															.getLocalName())) {
+                                        if(v.length()>0 && v.charAt(0)!='\n' && v.charAt(0)!='\r' && v.charAt(0)!='\t' ) {
+                                            if (!done) {
+                                                if ("s".equals(t)) {
+                                                    try {
+                                                        text = sheet.workbook.getSharedStringValue(Integer.valueOf(v));
+                                                    } catch (Exception ignore) {
+                                                        text = v;
+                                                    }
+                                                } else {
+                                                    text = v.trim();
+                                                }
+                                                done = true;
+                                            }
+                                        }
+									} else if (type == XMLStreamReader.END_ELEMENT && "c".equals(reader.getLocalName())) {
 										break;
 									}
 								}
-								if (r.charAt(1) < 'A') {// number
-									ret[r.charAt(0) - 'A'] = new Cell(r, s, t,
-											v, text);
+
+                                if (r.charAt(1) < 'A') {// number
+									int index = r.charAt(0) - 'A';
+									System.out.printf("%s - %s - %s%n", index, r, text);
+									ret.add(index, new Cell(r, s, t, v, text));
 								} else if (r.length() > 2 && r.charAt(2) < 'A') {
 										int i = (r.charAt(1) - 'A') + (r.charAt(0) - 'A' + 1) * 26;
+									    System.out.printf("%s - %s - %s%n", i, r, text);
 										if (i < MAX_COLUMN_SPAN)
-											ret[i] = new Cell(r, s, t, v, text);
+											ret.add(i, new Cell(r, s, t, v, text));
 								}
 								// ignore columns larger than ZZ
 							} else {
-								throw new IllegalStateException(
-										"<c> mal-format");
+								throw new IllegalStateException("<c> mal-format");
 							}
 						}
 						break;
 					case XMLStreamReader.END_ELEMENT:
 						if ("row".equals(reader.getLocalName())) {
-							if (loadEagerly) {
+                            System.out.println("end of row");
+                            if (loadEagerly) {
 								status.rowIndex++;
 								if (status.rowIndex < lastRowIndex) {
 									if (sheet.addToMemory) {
 										// fill the empty rows
-										for (int i = 0; i < lastRowIndex
-												- status.rowIndex; i++) {
-											sheet.parsedRows.add(EMPTY_ROW);
+										for (int i = 0; i < lastRowIndex - status.rowIndex; i++) {
+											sheet.parsedRows.add(Collections.<Cell>emptyList());
 										}
 									}
 								}
@@ -205,7 +232,7 @@ public class Sheet {
 								delayRow = ret;
 								return EMPTY_ROW;
 							} else {
-								return ret;
+								return ret.toArray(TEMPLATE);
 							}
 						}
 						break;
@@ -238,7 +265,7 @@ public class Sheet {
 	 * 
 	 * @return
 	 */
-	public List<Cell[]> getRows() {
+	public List<List<Cell>> getRows() {
 		if (!(alreadyParsed && addToMemory)) {
 			throw new IllegalStateException(
 					"rows not parsed,it should only be used in classic mode");
@@ -309,12 +336,12 @@ public class Sheet {
 					"rows not parsed,it should only be used in classic mode");
 		}
 		if (row < parsedRows.size()) {
-			Cell[] rowEntry = parsedRows.get(row);
-			if (rowEntry == EMPTY_ROW) {
+			List<Cell> rowEntry = parsedRows.get(row);
+			if (rowEntry.isEmpty()) {
 				return null;
 			}
-			if (column < rowEntry.length) {
-				return rowEntry[column] == null ? null : rowEntry[column]
+			if (column < rowEntry.size()) {
+				return rowEntry.get(column) == null ? null : rowEntry.get(column)
 						.getValue();
 			}
 			return null;
@@ -652,7 +679,6 @@ public class Sheet {
 	 * xmlns:r=
 	 * "http://schemas.openxmlformats.org/officeDocument/2006/relationships" ><sheetData>
 	 * 
-	 * @param writer
 	 * @throws XMLStreamException
 	 */
 	void mergeSheet() throws XMLStreamException {
@@ -666,7 +692,7 @@ public class Sheet {
 			int rowLen = Math.max(parsedRows.size(), modifiedRowLength);
 			for (int rowIndex = 0; rowIndex < rowLen; rowIndex++) {
 				if (rowIndex < parsedRows.size()) {
-					sheetsWriter.writeRow(parsedRows.get(rowIndex), rowIndex);
+					sheetsWriter.writeRow(parsedRows.get(rowIndex).toArray(SheetRowReader.TEMPLATE), rowIndex);
 				} else {
 					sheetsWriter.writeRow(EMPTY_ROW, rowIndex);
 				}

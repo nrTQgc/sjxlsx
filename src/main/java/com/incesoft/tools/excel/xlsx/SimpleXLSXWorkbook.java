@@ -52,11 +52,13 @@ public class SimpleXLSXWorkbook {
 
 	ZipFile zipfile;
 
-	private InputStream findData(String name) {
+	private InputStream findData(String ... possibleNames) {
 		try {
-			ZipEntry entry = zipfile.getEntry(name);
-			if (entry != null) {
-				return zipfile.getInputStream(entry);
+			for(String name : possibleNames) {
+				ZipEntry entry = zipfile.getEntry(name);
+				if (entry != null) {
+					return zipfile.getInputStream(entry);
+				}
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -69,6 +71,7 @@ public class SimpleXLSXWorkbook {
 	private static final String PATH_XL_RELATION_SHEETS = "xl/worksheets/_rels/sheet%d.xml.rels";
 
 	private static final String PATH_SHAREDSTRINGS = "xl/sharedStrings.xml";
+	private static final String PATH_SHAREDSTRINGS2 = "xl/SharedStrings.xml";
 
 	private static final String PATH_CONTENT_TYPES = "[Content_Types].xml";
 
@@ -85,7 +88,7 @@ public class SimpleXLSXWorkbook {
 	public SimpleXLSXWorkbook(File file) {
 		try {
 			this.zipfile = new ZipFile(file);
-			InputStream stream = findData(PATH_SHAREDSTRINGS);
+			InputStream stream = findData(PATH_SHAREDSTRINGS, PATH_SHAREDSTRINGS2);
 			if (stream != null) {
 				parseSharedStrings(stream);
 			}
@@ -226,7 +229,7 @@ public class SimpleXLSXWorkbook {
 							j = j - 6;
 						}
 					}
-					sharedStrings.put(sharedStringLen++, builder.toString());
+					sharedStrings.put(sharedStringLen++, builder.toString().trim());
 					si = false;
 				}
 				break;
