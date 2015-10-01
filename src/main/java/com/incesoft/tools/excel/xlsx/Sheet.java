@@ -139,7 +139,6 @@ public class Sheet {
 					switch (type) {
 					case XMLStreamReader.START_ELEMENT:
 						if ("row".equals(reader.getLocalName())) {
-                            System.out.println("start of row");
 							spans = reader.getAttributeValue(null, "spans");
 							if (spans == null) {
 								// empty row
@@ -160,9 +159,6 @@ public class Sheet {
 								t = reader.getAttributeValue(null, "t");
 								// s = reader.getAttributeValue(null, "s");
 								r = reader.getAttributeValue(null, "r");
-                                if("B30976".equals(r)){
-                                    System.out.println(r);
-                                }
 								text = null;
 								v = null;
 								boolean done = false;
@@ -194,11 +190,9 @@ public class Sheet {
 
                                 if (r.charAt(1) < 'A') {// number
 									int index = r.charAt(0) - 'A';
-									System.out.printf("%s - %s - %s%n", index, r, text);
 									ret.add(index, new Cell(r, s, t, v, text));
 								} else if (r.length() > 2 && r.charAt(2) < 'A') {
 										int i = (r.charAt(1) - 'A') + (r.charAt(0) - 'A' + 1) * 26;
-									    System.out.printf("%s - %s - %s%n", i, r, text);
 										if (i < MAX_COLUMN_SPAN)
 											ret.add(i, new Cell(r, s, t, v, text));
 								}
@@ -210,7 +204,6 @@ public class Sheet {
 						break;
 					case XMLStreamReader.END_ELEMENT:
 						if ("row".equals(reader.getLocalName())) {
-                            System.out.println("end of row");
                             if (loadEagerly) {
 								status.rowIndex++;
 								if (status.rowIndex < lastRowIndex) {
