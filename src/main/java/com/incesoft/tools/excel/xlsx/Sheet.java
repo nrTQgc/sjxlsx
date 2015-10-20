@@ -167,7 +167,18 @@ public class Sheet {
 									if (type == XMLStreamReader.START_ELEMENT && "v".equals(reader.getLocalName())) {
                                         continue;
 									}
-                                    if (type == XMLStreamReader.CHARACTERS) {
+									if (type == XMLStreamReader.START_ELEMENT && "f".equals(reader.getLocalName())) {
+										//skip formula
+										while (reader.hasNext() ) {
+											type = reader.next();
+											if (type == XMLStreamReader.END_ELEMENT && "f".equals(reader.getLocalName())) {
+												break;
+											}
+										}
+										continue;
+									}
+
+									if (type == XMLStreamReader.CHARACTERS) {
 										v = reader.getText();
                                         if(v.length()>0 && v.charAt(0)!='\n' && v.charAt(0)!='\r' && v.charAt(0)!='\t' ) {
                                             if (!done) {
