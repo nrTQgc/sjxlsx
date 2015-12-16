@@ -184,7 +184,7 @@ public class Sheet {
                                             if (!done) {
                                                 if ("s".equals(t)) {
                                                     try {
-                                                        text = sheet.workbook.getSharedStringValue(Integer.valueOf(v));
+                                                        text = sheet.workbook.getSharedStringValue(Integer.valueOf(v.trim()));
                                                     } catch (Exception ignore) {
                                                         text = v;
                                                     }
